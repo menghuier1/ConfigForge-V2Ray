@@ -2,16 +2,20 @@ name: Update VPN Configs
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'   # every hour at minute 00 (UTC)
+    - cron: '0 * * * *'
 jobs:
   update-configs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
+
+      - name: Switch to auto-source branch, create if not exists
+        run: |
+          git checkout auto-source || git checkout -b auto-source
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -19,7 +23,7 @@ jobs:
           python-version: '3.13'
 
       - name: Cache pip dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('source/requirements.txt') }}
@@ -49,12 +53,12 @@ jobs:
           git status
           git diff --stat
 
-      - name: Commit & Push if changes detected
+      - name: Commit & Push auto-source
         run: |
           git add .
           if ! git diff --cached --quiet; then
             git commit -m "Auto-update VPN configs"
-            git push origin main
+            git push origin auto-source
           else
             echo "✅ No file changes, skip commit and push."
           fi
